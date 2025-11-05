@@ -1,76 +1,38 @@
+from fastapi import HTTPException, status
 import pymongo
-from bson import json_util, ObjectId
-import json
 
-async def get_all_files():
-    uri = 'mongodb+srv://admin:admin@cluster0.ifmh4lk.mongodb.net/?appName=Cluster0'
-    client = pymongo.MongoClient(uri)
+uri = 'mongodb+srv://admin:admin@cluster0.ifmh4lk.mongodb.net/?appName=Cluster0'
+client = pymongo.MongoClient(uri)
+
+async def create_file_agent(file_agent):
     try:
-        result = client["vertex_document_search_db"]["files"].find()
-        return {
-            "success": True,
-            "data": json.dumps(list(result), default=json_util.default)
-        }
+        created_file_agent = client["vertex_document_search_db"]["file_agent"].insert_one(file_agent)
+        return created_file_agent
     except Exception as e:
         return {
             "success": False,
             "error": str(e)
         }
-
-async def create_file(file_name, datastore_id = None):
-    uri = 'mongodb+srv://admin:admin@cluster0.ifmh4lk.mongodb.net/?appName=Cluster0'
-    client = pymongo.MongoClient(uri)
     
-    try:
-        client["vertex_document_search_db"]["files"].insert_one({
-            "file_name": file_name,
-            "datastore_id": datastore_id,
-            "indexed": False
-        })
-        return {
-            "success": True,
-            "data": {
-                "file_name": file_name,
-                "datastore_id": datastore_id
-            }
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+async def get_file_agent(id):
+    return client["vertex_document_search_db"]["file_agent"].find_one(
+        {"_id": id}
+    )
 
-async def update_file(file_id, indexed = True):
-    uri = 'mongodb+srv://admin:admin@cluster0.ifmh4lk.mongodb.net/?appName=Cluster0'
-    client = pymongo.MongoClient(uri)
-    try:
-        # Convert string file_id to ObjectId
-        object_id = ObjectId(file_id)
-        
-        result = client["vertex_document_search_db"]["files"].update_one({
-            "_id": object_id
-        }, {
-            "$set": {
-                "indexed": indexed
-            }
-        })
-        
-        if result.matched_count == 0:
-            return {
-                "success": False,
-                "error": "File not found"
-            }
-        
-        return {
-            "success": True,
-            "data": {
-                "file_id": file_id,
-                "indexed": indexed
-            }
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+async def get_all_file_agents():
+    return client["vertex_document_search_db"]["file_agent"].find(limit=100)
 
+async def update_single_file_agent(id, file_agent):
+    file_agent = {k: v for k, v in file_agent.dict().items() if v is not None}
+    update_result = client["vertex_document_search_db"]["file_agent"].update_one(
+        {"_id": id}, {"$set": file_agent}
+    )
+    if update_result.modified_count == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with ID {id} not found")
+
+    if (
+        existing_book := await get_file_agent(id)
+    ) is not None:
+        return existing_book
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with ID {id} not found")
