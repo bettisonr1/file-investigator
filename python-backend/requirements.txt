@@ -1,0 +1,9 @@
+flask[async]
+flask-cors
+google-cloud-discoveryengine
+google-cloud-storage
+python-dotenv
+google-adk
+langchain-google-community
+deprecated
+pymongo
