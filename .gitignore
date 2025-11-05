@@ -1,2 +1,4 @@
 .env
 google-key.json
+node_modules
+build
