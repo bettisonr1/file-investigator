@@ -7,8 +7,9 @@ from google.adk.runners import Runner
 from google.genai import types
 import os
 from threading import Lock
-from bson import json_util, ObjectId
-import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Dictionary to store session_id -> agent mappings
 agent_sessions = {}
@@ -23,26 +24,7 @@ DEFAULT_USER_ID = "user-123"
 GCS_DATASTORE_PATH = os.getenv('GCS_DATASTORE_PATH')
 
 session_service = DatabaseSessionService(db_url="sqlite:///./my_agent_data.db")
-
-def _get_default_datastore_location():
-    """
-    Constructs the default datastore location from environment variables.
-    
-    Returns:
-        str: The full datastore location path
-    """
-    global DEFAULT_DATASTORE_LOCATION
-    
-    if DEFAULT_DATASTORE_LOCATION:
-        return DEFAULT_DATASTORE_LOCATION
-    
-    project_id = os.getenv('GOOGLE_CLOUD_PROJECT', 'infra-bedrock-415017')
-    location = os.getenv('DISCOVERY_ENGINE_LOCATION', 'global')
-    collection_id = os.getenv('DISCOVERY_ENGINE_COLLECTION_ID', 'default_collection')
-    datastore_id = os.getenv('DISCOVERY_ENGINE_DATASTORE_ID', 'vertex-manuals-store_1761654456839')
-    
-    DEFAULT_DATASTORE_LOCATION = f'projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{datastore_id}'
-    return DEFAULT_DATASTORE_LOCATION
+print(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
 
 async def get_session_event_history(session_id):
     session = session_service.get_session(app_name=DEFAULT_APP_NAME, user_id=DEFAULT_USER_ID, session_id=session_id)
@@ -99,9 +81,9 @@ async def query_agent_by_session(session_id, query, datastore_location):
 
         datastore_path = GCS_DATASTORE_PATH + "/" + datastore_location
         agent = None
-        session = session_service.get_session(app_name=DEFAULT_APP_NAME, user_id=DEFAULT_USER_ID, session_id=session_id)
+        session = await session_service.get_session(app_name=DEFAULT_APP_NAME, user_id=DEFAULT_USER_ID, session_id=session_id)
         if session is None:
-            session = session_service.create_session(app_name=DEFAULT_APP_NAME, user_id=DEFAULT_USER_ID, session_id=session_id)
+            session = await session_service.create_session(app_name=DEFAULT_APP_NAME, user_id=DEFAULT_USER_ID, session_id=session_id)
             agent = create_vertex_search_agent(datastore_path)
             agent_sessions[session.id] = agent
         else:

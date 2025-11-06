@@ -7,12 +7,15 @@ import os
 import time
 import random
 import string
+from dotenv import load_dotenv
 
+load_dotenv()
 # Create a storage client
 storage_client = storage.Client()
 
 # The ID of your GCS bucket
 BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'query_bucket_for_manuals_rob')
+print(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
 
 
 def generate_v4_upload_signed_url(file_name=None, content_type='application/octet-stream'):
